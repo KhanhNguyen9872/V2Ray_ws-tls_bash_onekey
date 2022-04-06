@@ -96,12 +96,10 @@ check_system() {
 
     $INS install dbus
 
-    systemctl stop firewalld
-    systemctl disable firewalld
+    service firewalld stop
     echo -e "${OK} ${GreenBG} firewalld 已关闭 ${Font}"
 
-    systemctl stop ufw
-    systemctl disable ufw
+    service ufw stop
     echo -e "${OK} ${GreenBG} ufw 已关闭 ${Font}"
 }
 
@@ -130,9 +128,9 @@ chrony_install() {
     timedatectl set-ntp true
 
     if [[ "${ID}" == "centos" ]]; then
-        systemctl enable chronyd && systemctl restart chronyd
+        service chronyd restart
     else
-        systemctl enable chrony && systemctl restart chrony
+        service chrony restart
     fi
 
     judge "chronyd 启动 "
@@ -171,10 +169,10 @@ dependency_install() {
 
     if [[ "${ID}" == "centos" ]]; then
         touch /var/spool/cron/root && chmod 600 /var/spool/cron/root
-        systemctl start crond && systemctl enable crond
+        service crond start
     else
         touch /var/spool/cron/crontabs/root && chmod 600 /var/spool/cron/crontabs/root
-        systemctl start cron && systemctl enable cron
+        service cron start
 
     fi
     judge "crontab 自启动配置 "
@@ -213,14 +211,14 @@ dependency_install() {
     #    sed -i -r '/^HRNGDEVICE/d;/#HRNGDEVICE=\/dev\/null/a HRNGDEVICE=/dev/urandom' /etc/default/rng-tools
 
     if [[ "${ID}" == "centos" ]]; then
-        #       systemctl start rngd && systemctl enable rngd
+        #       service start rngd && service enable rngd
         #       judge "rng-tools 启动"
-        systemctl start haveged && systemctl enable haveged
+        service haveged start
         #       judge "haveged 启动"
     else
-        #       systemctl start rng-tools && systemctl enable rng-tools
+        #       service start rng-tools && service enable rng-tools
         #       judge "rng-tools 启动"
-        systemctl start haveged && systemctl enable haveged
+        service haveged start
         #       judge "haveged 启动"
     fi
 
@@ -324,7 +322,6 @@ v2ray_install() {
 
     if [[ -f v2ray.sh ]]; then
         rm -rf $v2ray_systemd_file
-        systemctl daemon-reload
         bash v2ray.sh --force
         judge "安装 V2ray"
     else
@@ -582,21 +579,20 @@ EOF
 }
 
 start_process_systemd() {
-    systemctl daemon-reload
     chown -R root.root /var/log/v2ray/
     if [[ "$shell_mode" != "h2" ]]; then
-        systemctl restart nginx
+        service nginx restart
         judge "Nginx 启动"
     fi
-    systemctl restart v2ray
+    service restart v2ray
     judge "V2ray 启动"
 }
 
 enable_process_systemd() {
-    systemctl enable v2ray
+    #service enable v2ray
     judge "设置 v2ray 开机自启"
     if [[ "$shell_mode" != "h2" ]]; then
-        systemctl enable nginx
+        #service enable nginx
         judge "设置 Nginx 开机自启"
     fi
 
@@ -604,12 +600,12 @@ enable_process_systemd() {
 
 stop_process_systemd() {
     if [[ "$shell_mode" != "h2" ]]; then
-        systemctl stop nginx
+        service nginx stop
     fi
-    systemctl stop v2ray
+    service v2ray stop
 }
 nginx_process_disabled() {
-    [ -f $nginx_systemd_file ] && systemctl stop nginx && systemctl disable nginx
+    [ -f $nginx_systemd_file ] && service nginx stop
 }
 
 #debian 系 9 10 适配
@@ -619,7 +615,7 @@ nginx_process_disabled() {
 #    else
 #        touch /etc/rc.local && chmod +x /etc/rc.local
 #        echo "#!/bin/bash" >> /etc/rc.local
-#        systemctl start rc-local
+#        service start rc-local
 #    fi
 #
 #    judge "rc.local 配置"
@@ -778,7 +774,6 @@ WantedBy=multi-user.target
 EOF
 
     judge "Nginx systemd ServerFile 添加"
-    systemctl daemon-reload
 }
 
 tls_type() {
@@ -800,7 +795,7 @@ tls_type() {
             sed -i 's/ssl_protocols.*/ssl_protocols         TLSv1.2 TLSv1.3;/' $nginx_conf
             echo -e "${OK} ${GreenBG} 已切换至 TLS1.2 and TLS1.3 ${Font}"
         fi
-        systemctl restart nginx
+        service nginx restart
         judge "Nginx 重启"
     else
         echo -e "${Error} ${RedBG} Nginx 或 配置文件不存在 或当前安装版本为 h2 ，请正确安装脚本后执行${Font}"
@@ -856,7 +851,6 @@ uninstall_all() {
       ;;
     *) ;;
     esac
-    systemctl daemon-reload
     echo -e "${OK} ${GreenBG} 已卸载 ${Font}"
 }
 delete_tls_key_and_crt() {
