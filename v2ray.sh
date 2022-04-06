@@ -426,9 +426,9 @@ EOF
 start_v2ray() {
     if [[ -f '/etc/systemd/system/v2ray.service' ]]; then
         if [[ -z "$V2RAY_CUSTOMIZE" ]]; then
-            systemctl start v2ray
+            service v2ray start
         else
-            systemctl start "$V2RAY_CUSTOMIZE"
+            service "$V2RAY_CUSTOMIZE" start
         fi
     fi
     if [[ "$?" -ne 0 ]]; then
@@ -439,11 +439,11 @@ start_v2ray() {
 }
 
 stop_v2ray() {
-    V2RAY_CUSTOMIZE="$(systemctl list-units | grep 'v2ray@' | awk -F ' ' '{print $1}')"
+    V2RAY_CUSTOMIZE="$(service list-units | grep 'v2ray@' | awk -F ' ' '{print $1}')"
     if [[ -z "$V2RAY_CUSTOMIZE" ]]; then
-        systemctl stop v2ray
+        service v2ray stop
     else
-        systemctl stop "$V2RAY_CUSTOMIZE"
+        service "$V2RAY_CUSTOMIZE" stop
     fi
     if [[ "$?" -ne '0' ]]; then
         echo 'error: Stopping the V2Ray service failed.'
@@ -468,7 +468,7 @@ check_update() {
 }
 
 remove_v2ray() {
-    if [[ -n "$(systemctl list-unit-files | grep 'v2ray')" ]]; then
+    if [[ -n "$(service list-unit-files | grep 'v2ray')" ]]; then
         if [[ -n "$(pidof v2ray)" ]]; then
             stop_v2ray
         fi
@@ -487,7 +487,7 @@ remove_v2ray() {
             echo "removed: $DAT_PATH"
             echo 'removed: /etc/systemd/system/v2ray.service'
             echo 'removed: /etc/systemd/system/v2ray@.service'
-            echo 'Please execute the command: systemctl disable v2ray'
+            echo 'Please execute the command: service disable v2ray'
             echo "You may need to execute a command to remove dependent software: $PACKAGE_MANAGEMENT_REMOVE curl unzip"
             echo 'info: V2Ray has been removed.'
             echo 'info: If necessary, manually delete the configuration and log files.'
@@ -557,7 +557,7 @@ main() {
     fi
 
     # Determine if V2Ray is running
-    if [[ -n "$(systemctl list-unit-files | grep 'v2ray')" ]]; then
+    if [[ -n "$(service list-unit-files | grep 'v2ray')" ]]; then
         if [[ -n "$(pidof v2ray)" ]]; then
             stop_v2ray
             V2RAY_RUNNING='1'
@@ -606,7 +606,7 @@ main() {
     if [[ "$V2RAY_RUNNING" -eq '1' ]]; then
         start_v2ray
     else
-        echo 'Please execute the command: systemctl enable v2ray; systemctl start v2ray'
+        echo 'Please execute the command: service enable v2ray; service start v2ray'
     fi
 }
 
